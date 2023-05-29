@@ -1,0 +1,13 @@
+package com.jirafik.hash;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class HashGeneratorServiceApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(HashGeneratorServiceApplication.class, args);
+    }
+
+}
