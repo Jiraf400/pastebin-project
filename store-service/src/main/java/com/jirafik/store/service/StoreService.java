@@ -1,23 +1,13 @@
 package com.jirafik.store.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.api.client.googleapis.json.GoogleJsonResponseException;
 import com.google.api.client.http.FileContent;
-import com.google.api.client.http.HttpRequestInitializer;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.drive.Drive;
-import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
-import com.google.auth.http.HttpCredentialsAdapter;
-import com.google.auth.oauth2.GoogleCredentials;
 import com.jirafik.store.entity.Post;
 import com.jirafik.store.entity.PostRequest;
-import jdk.jfr.Frequency;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -26,11 +16,11 @@ import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.*;
 
+
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class StoreService {
-
     private final GoogleDriveManager googleDriveManager = new GoogleDriveManager();
 
     private Drive getService(GoogleDriveManager manager) throws GeneralSecurityException, IOException {
@@ -44,7 +34,7 @@ public class StoreService {
 
         Post post = maptoPost(request);
 
-        post.setId(String.valueOf(new Random().nextLong(10L, 100000L)));
+        post.setId(String.valueOf(new Random().nextLong(100000, 999999L)));
 
         File fileMetadata = new File();
         fileMetadata.setName(post.getTitle() + ".json");
@@ -88,7 +78,7 @@ public class StoreService {
 
     }
 
-    public String deleteFile(String fileId) throws Exception {
+    public String deleteContent(String fileId) throws Exception {
 
         getService(googleDriveManager)
                 .files()
@@ -97,7 +87,6 @@ public class StoreService {
 
         return "File with ID :" + fileId + " was deleted";
     }
-
 
     public List<File> getFileList() {
 
