@@ -16,7 +16,6 @@ import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.*;
 
-
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -24,7 +23,6 @@ public class StoreService {
     private final GoogleDriveManager googleDriveManager = new GoogleDriveManager();
 
     private Drive getService(GoogleDriveManager manager) throws GeneralSecurityException, IOException {
-
         return manager.getInstance();
     }
 
@@ -34,12 +32,14 @@ public class StoreService {
 
         Post post = maptoPost(request);
 
-        post.setId(String.valueOf(new Random().nextLong(100000, 999999L)));
-
         File fileMetadata = new File();
         fileMetadata.setName(post.getTitle() + ".json");
 
         try {
+
+            System.out.println("StoreService Post.class : \n" + post);
+            System.out.println();
+            System.out.println("StoreService PostRequest.class : \n" + request);
 
             java.io.File storeFile = new java.io.File("post.json");
 
@@ -48,12 +48,12 @@ public class StoreService {
             FileContent mediaContent = new FileContent("plain/txt", storeFile);
 
             File uploadFile = getService(googleDriveManager).files().create(fileMetadata, mediaContent)
-                    .setFields("id")
-                    .execute();
+                    .setFields("id").set(post.getId(), Post.class).execute();
 
             log.info("Post ID: " + uploadFile.getId());
 
-        } catch (Exception e) {
+        } catch (
+                Exception e) {
             log.info("Unable to upload file: " + e.getMessage());
         }
 
@@ -102,11 +102,12 @@ public class StoreService {
             System.out.println(e.getMessage());
         }
 
-        return result.getFiles();
+        return result != null ? result.getFiles() : null;
     }
 
     public Post maptoPost(PostRequest request) {
         return Post.builder()
+                .id(request.getId())
                 .title(request.getTitle())
                 .img(request.getImg())
                 .content(request.getContent())

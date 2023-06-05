@@ -1,11 +1,12 @@
 package com.jirafik.post.service;
 
-import com.jirafik.post.entity.Link;
 import com.jirafik.post.entity.Post;
 import com.jirafik.post.entity.PostRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Random;
@@ -20,8 +21,21 @@ public class PostService {
 
         request.setId(String.valueOf(new Random().nextLong(100000, 999999L)));
 
-        System.out.println("PostService PostRequest.class : \n" +request);
-        System.out.println("-----------------------------------");
+        System.out.println("PostService PostRequest.class : \n" + request);
+
+        var response = webClientBuilder.build().post()
+                .uri("http://store-service/api/store/upload",
+                        uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Mono.just(request), PostRequest.class)
+                .retrieve()
+                .bodyToMono(Post.class)
+                .block();
+
+        System.out.println("Response: " + response);
+
+        return response;
+    }
 
 //        webClientBuilder.build().post()
 //                .uri("http://hash-service/api/hash/setLink",
@@ -29,14 +43,6 @@ public class PostService {
 //                .retrieve()
 //                .bodyToMono(Link.class)
 //                .block();
-
-        return webClientBuilder.build().post()
-                .uri("http://store-service/api/store/upload",
-                        uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
-                .retrieve()
-                .bodyToMono(Post.class)
-                .block();
-    }
 
     public String getPostLink(String postId) {
 
