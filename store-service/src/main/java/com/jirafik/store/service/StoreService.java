@@ -7,6 +7,9 @@ import com.google.api.services.drive.model.File;
 import com.google.api.services.drive.model.FileList;
 import com.jirafik.store.entity.Post;
 import com.jirafik.store.entity.PostRequest;
+import com.jirafik.store.entity.StoredPost;
+import com.jirafik.store.entity.StoredPostResponse;
+import com.jirafik.store.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,7 @@ import java.util.*;
 @Service
 public class StoreService {
     private final GoogleDriveManager googleDriveManager = new GoogleDriveManager();
+    private final StoreRepository repository;
 
     private Drive getService(GoogleDriveManager manager) throws GeneralSecurityException, IOException {
         return manager.getInstance();
@@ -47,10 +51,20 @@ public class StoreService {
 
             FileContent mediaContent = new FileContent("plain/txt", storeFile);
 
-            File uploadFile = getService(googleDriveManager).files().create(fileMetadata, mediaContent)
-                    .setFields("id").set(post.getId(), Post.class).execute();
+            var uploadFile = getService(googleDriveManager).files()
+                    .create(fileMetadata, mediaContent)
+                    .setFields("id")
+                    .execute();
 
-            log.info("Post ID: " + uploadFile.getId());
+            log.info("File ID: " + uploadFile.getId());
+
+            StoredPost storedPost = StoredPost.builder()
+                    .id(post.getId())
+                    .postTitle(post.getTitle())
+                    .fileId(uploadFile.getId())
+                    .build();
+
+            repository.save(storedPost);
 
         } catch (
                 Exception e) {
@@ -61,20 +75,25 @@ public class StoreService {
     }
 
 
-    public void downloadContent(String fileId, OutputStream outputStream) {
+    public OutputStream downloadContent(String postId, OutputStream outputStream) {
 
-        System.out.println("Download method: \n caught realFileId: " + fileId);
+        byte[] decodedBytes = Base64.getDecoder().decode(postId);
+        String decodedPostId = new String(decodedBytes);
+
+        String fileID = repository.findFileById(decodedPostId);
 
         try {
 
-            googleDriveManager.getInstance()
+            getService(googleDriveManager)
                     .files()
-                    .get(fileId)
+                    .get(fileID)
                     .executeMediaAndDownloadTo(outputStream);
 
         } catch (Exception e) {
             System.err.println("Unable to move file: " + e.getMessage());
         }
+
+        return outputStream;
 
     }
 
@@ -88,21 +107,42 @@ public class StoreService {
         return "File with ID :" + fileId + " was deleted";
     }
 
-    public List<File> getFileList() {
 
-        FileList result = null;
+    /*
 
-        try {
-            result = getService(googleDriveManager).files().list()
-                    .setPageSize(10)
-                    .setFields("nextPageToken, files(id, name)")
-                    .execute();
+   {
+        "id: "...",
+        "title": "..."
+   },
+   {
+        "id: "...",
+        "title": "..."
+   },
+   {
+        "id: "...",
+        "title": "..."
+   },
+   ***
 
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
+   */
+    public List<StoredPostResponse> getPostList() {
+
+        List<StoredPost> storedPostList = repository.findAll();
+
+        List<StoredPostResponse> postResponseList = new ArrayList<>();
+
+        for (StoredPost post : storedPostList) {
+
+            for(StoredPostResponse response : postResponseList) {
+                response.setId(post.getId());
+                response.setPostTitle(post.getPostTitle());
+                postResponseList.add(response);
+
+            }
         }
 
-        return result != null ? result.getFiles() : null;
+        return postResponseList;
+
     }
 
     public Post maptoPost(PostRequest request) {
@@ -115,6 +155,22 @@ public class StoreService {
                 .dateOfCreation(Date.from(Instant.now()))
                 .wroteBy("John")
                 .build();
+    }
+
+
+    public static void main(String[] args) {
+        String key = "894735894789527";
+
+        String encodedString = Base64.getEncoder().encodeToString(key.getBytes());
+
+        byte[] decodedBytes = Base64.getDecoder().decode(encodedString);
+        String decodedString = new String(decodedBytes);
+
+        System.out.println(encodedString);
+        System.out.println();
+        System.out.println(decodedString);
+
+
     }
 
 }
