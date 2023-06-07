@@ -24,7 +24,5 @@ public class Link {
     private Boolean isExpired;
 
     private String hash;
-
-    private String PostID;
 }
 

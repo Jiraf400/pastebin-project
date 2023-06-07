@@ -7,7 +7,4 @@ import java.util.Optional;
 
 public interface HashRepository extends JpaRepository<Link, Integer> {
 
-    Link findLinkByPostID(String PostID);
-
-
 }

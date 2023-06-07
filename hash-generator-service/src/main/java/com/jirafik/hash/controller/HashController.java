@@ -19,14 +19,14 @@ public class HashController {
 
     private final HashService service;
 
-    @PostMapping("/postLink")
-    public void postLink(PostRequest postRequest) {
-        service.postLink(postRequest);
+    @PostMapping("/postHash")
+    public String postHash(PostRequest postRequest) {
+        return service.postHash(postRequest);
     }
 
-    @GetMapping("/getLink")
-    public String getLink(String id) {
-        return service.getLink(id);
+    @GetMapping("/getHash")
+    public String getHash(String postId) {
+        return service.getPostHash(postId);
     }
 
 }
