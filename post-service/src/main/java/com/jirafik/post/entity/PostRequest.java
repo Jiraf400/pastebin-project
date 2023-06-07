@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.util.List;
+import java.util.Random;
 
 @ToString
 @Builder
@@ -13,7 +14,7 @@ import java.util.List;
 public class PostRequest {
 
     @JsonProperty
-    private String id;
+    private String id = String.valueOf(new Random().nextLong(100000, 999999999999999999L));
     @JsonProperty
     private String title;
     @JsonProperty

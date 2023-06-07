@@ -2,6 +2,7 @@ package com.jirafik.post.service;
 
 import com.jirafik.post.entity.Post;
 import com.jirafik.post.entity.PostRequest;
+import jakarta.ws.rs.POST;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -19,11 +20,20 @@ public class PostService {
 
     public Post upload(PostRequest request) {
 
-        request.setId(String.valueOf(new Random().nextLong(100000, 999999L)));
+        String encodedPostID = webClientBuilder.build().post()
+                .uri("http://hash-service/api/hash/postLink",
+                        uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Mono.just(request), PostRequest.class)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+        request.setId(encodedPostID);
 
         System.out.println("PostService PostRequest.class : \n" + request);
 
-        var response = webClientBuilder.build().post()
+        Post response = webClientBuilder.build().post()
                 .uri("http://store-service/api/store/upload",
                         uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -36,13 +46,6 @@ public class PostService {
 
         return response;
     }
-
-//        webClientBuilder.build().post()
-//                .uri("http://hash-service/api/hash/setLink",
-//                        uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
-//                .retrieve()
-//                .bodyToMono(Link.class)
-//                .block();
 
     public String getPostLink(String postId) {
 
