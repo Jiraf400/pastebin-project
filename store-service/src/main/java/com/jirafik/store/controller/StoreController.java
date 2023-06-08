@@ -2,15 +2,12 @@ package com.jirafik.store.controller;
 
 import com.google.api.services.drive.model.File;
 import com.jirafik.store.entity.Post;
-import com.jirafik.store.entity.PostRequest;
-import com.jirafik.store.entity.StoredPostResponse;
+import com.jirafik.store.dto.PostRequest;
+import com.jirafik.store.dto.StoredPostResponse;
 import com.jirafik.store.service.StoreService;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -31,12 +28,12 @@ public class StoreController {
     }
 
     @GetMapping("/download")
-    public OutputStream download(@RequestParam("postID") String id, HttpServletResponse response) throws IOException {
-        return service.downloadContent(id, response.getOutputStream());
+    public File download(@RequestParam("postId") String id){
+        return service.downloadContent(id);
     }
 
     @DeleteMapping("/delete")
-    public String delete(@RequestParam("postID") String id) throws Exception {
+    public String delete(@RequestParam("postId") String id) {
         return service.deleteContent(id);
     }
 

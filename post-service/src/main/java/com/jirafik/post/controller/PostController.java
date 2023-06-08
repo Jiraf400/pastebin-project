@@ -6,6 +6,7 @@ import com.jirafik.post.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.OutputStream;
 import java.util.List;
 
 @RestController
@@ -21,18 +22,18 @@ public class PostController {
     }
 
     @GetMapping("/get")
-    public String getPostLink(@RequestParam String postId) {
-        return service.getPostLink(postId);
+    public Object downloadPost(@RequestParam("postId") String postId) {
+        return service.download(postId);
     }
 
     @DeleteMapping("/delete")
-    public String deletePost(@RequestParam String postId) {
+    public String deletePost(@RequestParam("postId") String postId) {
         return service.deletePost(postId);
     }
 
     @GetMapping("/files")
     public List getFileList() {
-        return service.getFileList();
+        return service.getPostList();
     }
 
 }

@@ -1,4 +1,4 @@
-package com.jirafik.store.entity;
+package com.jirafik.store.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
