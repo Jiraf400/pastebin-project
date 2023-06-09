@@ -6,6 +6,9 @@ import com.jirafik.post.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.List;
 
@@ -22,7 +25,7 @@ public class PostController {
     }
 
     @GetMapping("/get")
-    public Object downloadPost(@RequestParam("postId") String postId) {
+    public String  downloadPost(@RequestParam("postId") String postId) {
         return service.download(postId);
     }
 

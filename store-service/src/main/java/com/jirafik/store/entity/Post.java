@@ -29,3 +29,4 @@ public class Post {
     private List<String> tags;
 
 }
+

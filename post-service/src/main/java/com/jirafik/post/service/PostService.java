@@ -1,16 +1,21 @@
 package com.jirafik.post.service;
 
+import com.jirafik.post.dto.OutputResponse;
 import com.jirafik.post.entity.Post;
 import com.jirafik.post.entity.PostRequest;
 import jakarta.ws.rs.POST;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.FileUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.io.OutputStream;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Random;
 
@@ -24,16 +29,6 @@ public class PostService {
     public Post upload(PostRequest request) {
 
         log.info("--Method upload() was called.");
-//        String encodedPostID = webClientBuilder.build().post()
-//                .uri("http://hash-service/api/hash/postHash",
-//                        uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .body(Mono.just(request), PostRequest.class)
-//                .retrieve()
-//                .bodyToMono(String.class)
-//                .block();
-//
-//        request.setId(encodedPostID);
 
         System.out.println("PostService PostRequest.class : \n" + request);
 
@@ -51,30 +46,42 @@ public class PostService {
         return response;
     }
 
-    public Object download(String postId) {
+    public String download(String postId) {
 
         log.info("--Method download() was called.");
 
-        Object response = null;
+        OutputResponse response = null;
+        FileOutputStream outputStream = null;
+        java.io.File outputFile = null;
+        String content = null;
 
         try {
             response = webClientBuilder.build().get()
                     .uri("http://store-service/api/store/download",
                             uriBuilder -> uriBuilder.queryParam("postId", postId).build())
                     .retrieve()
-                    .bodyToMono(Object.class)
+                    .bodyToMono(OutputResponse.class)
                     .block();
 
-        } catch (Exception e) {
+            outputFile = new java.io.File("temp.json");
+
+            outputStream = new FileOutputStream(outputFile);
+            outputStream.write(response.getContent());
+
+            content = com.google.common.io.Files.asCharSource(outputFile, Charsets.UTF_8).read();
+
+        } catch (
+                Exception e) {
             System.out.println("Oops. Look like some error occurred. Failed to download post with id = " + postId +
                     ". Please try again later.\n");
             e.printStackTrace();
         }
 
-        log.info("response of download method: {}", response);
+        log.info("response of download method: {}", response.toString());
 
-        return response;
+        return content;
     }
+
 
     public String deletePost(String postId) {
 

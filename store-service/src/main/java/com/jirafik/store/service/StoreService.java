@@ -5,6 +5,7 @@ import com.google.api.client.http.FileContent;
 import com.google.api.client.http.HttpResponse;
 import com.google.api.services.drive.Drive;
 import com.google.api.services.drive.model.File;
+import com.jirafik.store.dto.OutputResponse;
 import com.jirafik.store.entity.Post;
 import com.jirafik.store.dto.PostRequest;
 import com.jirafik.store.entity.StoredPost;
@@ -13,11 +14,14 @@ import com.jirafik.store.exceptions.DownloadPostException;
 import com.jirafik.store.exceptions.PostNotFound;
 import com.jirafik.store.exceptions.UploadPostException;
 import com.jirafik.store.repository.StoreRepository;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.time.Instant;
 import java.util.*;
@@ -78,39 +82,24 @@ public class StoreService {
         return post;
     }
 
-    public File downloadContent(String postId) {
+    public OutputResponse downloadContent(String postId) {
 
         StoredPost storedPost = repository.findById(postId).get();
 
-        HttpResponse httpResponse = null;
+        ByteArrayOutputStream outputStream = null;
 
         String fileId = storedPost.getFileId();
 
-        //TODO
-        //OutputStream outputStream = new ByteArrayOutputStream();
-        //
-        //      service.files().get(realFileId)
-        //          .executeMediaAndDownloadTo(outputStream);
-        //
-        //      return (ByteArrayOutputStream) outputStream;
-
         try {
-
             System.out.println("storedPost: " + storedPost);
             System.out.println("fileId: " + fileId);
 
             if (storedPost.getId() != null && !fileId.equals("")) {
 
-                httpResponse = getService(googleDriveManager)
-                        .files()
-                        .export(fileId, "plain/text")
-                        .executeMedia();
+                outputStream = new ByteArrayOutputStream();
 
-                Drive.Files.Get get = getService(googleDriveManager).files().get(fileId);
-                httpResponse = get.executeMedia();
-
-                System.out.println("Response: " + httpResponse);
-//                System.out.println("post: " + post);
+                getService(googleDriveManager).files().get(fileId)
+                        .executeMediaAndDownloadTo(outputStream);
 
             } else
                 throw new DownloadPostException("Oops... Look like some error occurred while downloading post. Try again.");
@@ -121,9 +110,10 @@ public class StoreService {
             log.info("Unable to download file: " + e.getMessage());
             e.printStackTrace();
         }
-
-        return null;
-
+        return OutputResponse.builder()
+                .postID(postId)
+                .content(outputStream.toByteArray())
+                .build();
     }
 
     public String deleteContent(String postId) {
