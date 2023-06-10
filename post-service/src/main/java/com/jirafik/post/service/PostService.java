@@ -26,13 +26,25 @@ public class PostService {
 
     private final WebClient.Builder webClientBuilder;
 
-    public Post upload(PostRequest request) {
+    public String upload(PostRequest request) {
 
-        log.info("--Method upload() was called.");
+        log.info("LOG: method upload() was called.");
 
         System.out.println("PostService PostRequest.class : \n" + request);
 
-        Post response = webClientBuilder.build().post()
+        String postUrl = webClientBuilder.build().post()
+                .uri("http://hash-service/api/hash/postHash",
+                        uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Mono.just(request), PostRequest.class)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+        log.info("LOG: postUrl: {}", postUrl);
+
+        webClientBuilder.build()
+                .post()
                 .uri("http://store-service/api/store/upload",
                         uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
                 .contentType(MediaType.APPLICATION_JSON)
@@ -41,24 +53,35 @@ public class PostService {
                 .bodyToMono(Post.class)
                 .block();
 
-        System.out.println("Response: " + response);
-
-        return response;
+        return postUrl;
     }
 
-    public String download(String postId) {
+    public String download(String postUrl) {
 
-        log.info("--Method download() was called.");
+        log.info("LOG: method download() was called.");
 
-        OutputResponse response = null;
-        FileOutputStream outputStream = null;
-        java.io.File outputFile = null;
+        OutputResponse postBody = null;
+        FileOutputStream outputStream;
+        java.io.File outputFile;
         String content = null;
 
+        String postId = "";
+
         try {
-            response = webClientBuilder.build().get()
+
+            postId = webClientBuilder.build().get()
+                    .uri("http://hash-service/api/hash/getId",
+                            uriBuilder -> uriBuilder.queryParam("postUrl", postUrl).build())
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+
+            log.info("LOG: postId: {}", postId);
+
+            String finalPostId = postId;
+            postBody = webClientBuilder.build().get()
                     .uri("http://store-service/api/store/download",
-                            uriBuilder -> uriBuilder.queryParam("postId", postId).build())
+                            uriBuilder -> uriBuilder.queryParam("postId", finalPostId).build())
                     .retrieve()
                     .bodyToMono(OutputResponse.class)
                     .block();
@@ -66,24 +89,25 @@ public class PostService {
             outputFile = new java.io.File("temp.json");
 
             outputStream = new FileOutputStream(outputFile);
-            outputStream.write(response.getContent());
+            outputStream.write(postBody.getContent());
 
             content = com.google.common.io.Files.asCharSource(outputFile, Charsets.UTF_8).read();
 
-        } catch (
-                Exception e) {
-            System.out.println("Oops. Look like some error occurred. Failed to download post with id = " + postId +
-                    ". Please try again later.\n");
+        } catch (Exception e) {
             e.printStackTrace();
+
+            return "Oops. Look like some error occurred. Failed to download post with id = " + postId +
+                    ". Please try again later.\n";
         }
 
-        log.info("response of download method: {}", response.toString());
+        log.info("LOG: response of download method: {}", postBody.toString());
 
         return content;
     }
 
-
     public String deletePost(String postId) {
+
+        log.info("LOG: method deletePost() was called.");
 
         return webClientBuilder.build().delete()
                 .uri("http://store-service/api/store/delete",
@@ -95,7 +119,7 @@ public class PostService {
 
     public List getPostList() {
 
-        log.info("--Method getPostList() was called.");
+        log.info("LOG: method getPostList() was called.");
 
         return webClientBuilder.build().get()
                 .uri("http://store-service/api/store/files")

@@ -20,13 +20,13 @@ public class PostController {
     private final PostService service;
 
     @PostMapping("/send")
-    public Post uploadPost(@RequestBody PostRequest request) {
+    public String uploadPost(@RequestBody PostRequest request) {
         return service.upload(request);
     }
 
-    @GetMapping("/get")
-    public String  downloadPost(@RequestParam("postId") String postId) {
-        return service.download(postId);
+    @GetMapping("/get/{postUrl}")
+    public String downloadPost(@PathVariable("postUrl") String uri) {
+        return service.download(uri);
     }
 
     @DeleteMapping("/delete")
