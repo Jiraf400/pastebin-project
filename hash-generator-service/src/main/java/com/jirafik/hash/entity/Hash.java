@@ -15,14 +15,16 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @NoArgsConstructor
 @Entity
 @Table
-public class Link {
+public class Hash {
 
     @Id
     @GeneratedValue(strategy = IDENTITY)
     private int id;
 
-    private Boolean isExpired;
-
     private String hash;
+
+    private String postId;
+
+    private String url;
 }
 

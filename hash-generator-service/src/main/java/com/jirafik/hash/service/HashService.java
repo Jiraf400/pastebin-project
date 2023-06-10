@@ -1,19 +1,15 @@
 package com.jirafik.hash.service;
 
-import com.jirafik.hash.entity.Link;
+import com.jirafik.hash.entity.Hash;
 import com.jirafik.hash.entity.PostRequest;
+import com.jirafik.hash.exceptions.PostNotFoundException;
 import com.jirafik.hash.repository.HashRepository;
-import com.netflix.discovery.converters.Auto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.RandomStringUtils;
 import org.springframework.stereotype.Service;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.*;
-
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class HashService {
@@ -22,23 +18,44 @@ public class HashService {
 
     public String postHash(PostRequest postRequest) {
 
-        Link link = Link.builder()
-                .isExpired(new Date().compareTo(getExpirationDate()) < 0)
-                .hash(Base64.getEncoder().encodeToString(postRequest.getId().getBytes()))
+        log.info("LOG: method postHash() was called.");
+
+        Hash hash = Hash.builder()
+                .hash(RandomStringUtils.random(8, "0123456789abcdefjpdkxmnoyzg"))
+                .url(RandomStringUtils.random(8, "0123456789abcdefjpdkxmnoyzg"))
+                .postId(postRequest.getId())
                 .build();
 
-        repository.save(link);
+        repository.save(hash);
 
-        return link.getHash();
+        System.out.println("--Link with hash " + hash.getHash() + " was saved.");
+
+        return hash.getUrl();
     }
 
-    private Date getExpirationDate() {
-        Date date = new Date();
-        Calendar cal = Calendar.getInstance();
-        cal.setTime(date);
-        cal.add(Calendar.DAY_OF_WEEK, 7);
-        return cal.getTime();
+    /* Method for update post download url */
+    public String getPostUrl(String postId) {
+
+        Hash hash = repository.findByPostId(postId);
+
+        if (postId == null || hash == null)
+            throw new PostNotFoundException("Post with id: " + postId + "  not found. Provide valid values and try again.");
+
+        hash.setUrl(RandomStringUtils.random(8, "0123456789abcdefjpdkxmnoyzg"));
+
+        return hash.getUrl();
     }
 
+    public String getPostId(String url) {
+
+        log.info("LOG: method getPostId() was called.");
+
+        Hash hash = repository.findByUrl(url);
+
+        if (url != null && hash != null) return hash.getPostId();
+
+        else throw new PostNotFoundException("No post found with such parameters. Try again.");
+    }
 
 }
+
