@@ -75,8 +75,10 @@ public class StoreService {
 
         } catch (UploadPostException e) {
             log.info("Unable to upload file: " + e.getMessage());
+            e.printStackTrace();
         } catch (Exception e) {
             log.info("Unable to upload file: " + e.getMessage());
+            e.printStackTrace();
         }
 
         return post;
