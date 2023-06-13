@@ -1,0 +1,85 @@
+version: '3.8'
+services:
+
+  postgres-store:
+    image: postgres
+    container_name: postgres-store
+    environment:
+      - POSTGRES_DB=store-service
+      - POSTGRES_USER=store
+      - POSTGRES_PASSWORD=password
+      - GDATA=/data/postgres
+    volumes:
+      - ./postgres-store:/data/postgres
+    ports:
+      - "5431:5431"
+    command: -p 5431
+    expose:
+      - "5431"
+    restart: always
+
+  postgres-hash:
+    image: postgres
+    container_name: postgres-hash
+    environment:
+      - POSTGRES_DB=hash-service
+      - POSTGRES_USER=hash
+      - POSTGRES_PASSWORD=password
+      - GDATA=/data/postgres
+    volumes:
+      - ./postgres-hash:/data/postgres
+    ports:
+      - "5432:5432"
+    restart: always
+
+  eureka-server:
+    image: registry.hub.docker.com/jirafus400/eureka-server:latest
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+
+  api-gateway:
+    image: registry.hub.docker.com/jirafus400/api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "8181:8181"
+    expose:
+      - "8181"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=TRACE
+    depends_on:
+      - eureka-server
+
+  post-service:
+    image: registry.hub.docker.com/jirafus400/post-service:latest
+    container_name: post-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - eureka-server
+      - api-gateway
+
+  store-service:
+    image: registry.hub.docker.com/jirafus400/store-service:latest
+    container_name: store-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-store:5431/store-service
+    depends_on:
+      - postgres-store
+      - eureka-server
+      - api-gateway
+
+  hash-generator-service:
+    image: registry.hub.docker.com/jirafus400/hash-generator-service:latest
+    container_name: hash-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-hash:5432/hash-service
+    depends_on:
+      - postgres-hash
+      - eureka-server
+      - api-gateway
