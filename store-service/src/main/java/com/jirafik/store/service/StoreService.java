@@ -28,7 +28,123 @@ public class StoreService {
 
     private final StoreRepository repository;
 
+<<<<<<< HEAD
     public List<StoredPostResponse> getFileList() {
+=======
+    private Drive getService(GoogleDriveManager manager) throws GeneralSecurityException, IOException {
+        return manager.getInstance();
+    }
+
+    public Post uploadContent(PostRequest request) {
+
+        ObjectMapper mapper = new ObjectMapper();
+
+        Post post = maptoPost(request);
+
+        File fileMetadata = new File();
+        fileMetadata.setName(post.getTitle() + ".json");
+
+        try {
+            java.io.File storeFile = new java.io.File("post.json");
+
+            mapper.writeValue(storeFile, post);
+
+            FileContent mediaContent = new FileContent("plain/txt", storeFile);
+
+            var uploadFile = getService(googleDriveManager).files()
+                    .create(fileMetadata, mediaContent)
+                    .setFields("id")
+                    .execute();
+
+            if (uploadFile != null) {
+                log.info("File ID: " + uploadFile.getId());
+
+                StoredPost storedPost = StoredPost.builder()
+                        .id(post.getId())
+                        .postTitle(post.getTitle())
+                        .fileId(uploadFile.getId())
+                        .build();
+
+                repository.save(storedPost);
+            } else
+                throw new UploadPostException("Oops... Look like some error occurred while uploading post. Try again.");
+
+
+        } catch (UploadPostException e) {
+            log.info("Unable to upload file: " + e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
+            log.info("Unable to upload file: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return post;
+    }
+
+    public OutputResponse downloadContent(String postId) {
+
+        StoredPost storedPost = repository.findById(postId).get();
+
+        ByteArrayOutputStream outputStream = null;
+
+        String fileId = storedPost.getFileId();
+
+        try {
+            System.out.println("storedPost: " + storedPost);
+            System.out.println("fileId: " + fileId);
+
+            if (storedPost.getId() != null && !fileId.equals("")) {
+
+                outputStream = new ByteArrayOutputStream();
+
+                getService(googleDriveManager).files().get(fileId)
+                        .executeMediaAndDownloadTo(outputStream);
+
+            } else
+                throw new DownloadPostException("Oops... Look like some error occurred while downloading post. Try again.");
+
+        } catch (DownloadPostException e) {
+            System.err.println("Unable to download file with id: " + fileId + "\n" + e.getMessage());
+        } catch (Exception e) {
+            log.info("Unable to download file: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return OutputResponse.builder()
+                .postID(postId)
+                .content(outputStream.toByteArray())
+                .build();
+    }
+
+    public String deleteContent(String postId) {
+
+        System.out.println("--Start method deleteContent(postId)");
+        StoredPost storedPost = repository.findById(postId).get();
+        String fileToDelete = storedPost.getFileId();
+
+        try {
+
+            if (storedPost.getId() != null && !fileToDelete.equals("")) {
+
+                getService(googleDriveManager)
+                        .files()
+                        .delete(fileToDelete)
+                        .execute();
+
+            } else throw new PostNotFound("Oops... Look like some error occurred while deleting post. Try again.");
+
+        } catch (PostNotFound e) {
+            System.err.println("Unable to download file with id: " + fileToDelete + "\n" + e.getMessage());
+        } catch (Exception e) {
+            log.info("Unable to delete file: " + e.getMessage());
+        }
+
+        repository.deleteById(postId);
+
+        return "Post with ID :" + postId + " was deleted";
+    }
+
+    public List<StoredPostResponse> getPostList() {
+>>>>>>> e3c95670302069e78fccccfc729b39a687c917e8
 
         List<StoredPost> storedPostList = repository.findAll();
 
