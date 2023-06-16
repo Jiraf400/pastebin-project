@@ -24,13 +24,13 @@ public class PostController {
         return service.upload(request);
     }
 
-    @GetMapping("/get/{postUrl}")
+    @GetMapping(value = "/get/{postUrl}", produces = {"application/json"})
     public String downloadPost(@PathVariable("postUrl") String uri) {
         return service.download(uri);
     }
 
-    @DeleteMapping("/delete")
-    public String deletePost(@RequestParam("postId") String postId) {
+    @DeleteMapping("/delete/{postId}")
+    public String deletePost(@PathVariable("postId") String postId) {
         return service.deletePost(postId);
     }
 

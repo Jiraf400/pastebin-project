@@ -17,7 +17,7 @@ public class StoredPost {
     @Id
     private String id;
 
-    private String postTitle;
+    private String fileName;
 
-    private String fileId;
+    private String postTitle;
 }

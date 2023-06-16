@@ -1,23 +1,15 @@
 package com.jirafik.post.service;
 
-import com.jirafik.post.dto.OutputResponse;
 import com.jirafik.post.entity.Post;
 import com.jirafik.post.entity.PostRequest;
-import jakarta.ws.rs.POST;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.Charsets;
-import org.apache.commons.io.FileUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.Random;
 
 @Slf4j
 @Service
@@ -60,12 +52,8 @@ public class PostService {
 
         log.info("LOG: method download() was called.");
 
-        OutputResponse postBody = null;
-        FileOutputStream outputStream;
-        java.io.File outputFile;
-        String content = null;
-
         String postId = "";
+        String postBody = "";
 
         try {
 
@@ -83,15 +71,8 @@ public class PostService {
                     .uri("http://store-service/api/store/download",
                             uriBuilder -> uriBuilder.queryParam("postId", finalPostId).build())
                     .retrieve()
-                    .bodyToMono(OutputResponse.class)
+                    .bodyToMono(String.class)
                     .block();
-
-            outputFile = new java.io.File("temp.json");
-
-            outputStream = new FileOutputStream(outputFile);
-            outputStream.write(postBody.getContent());
-
-            content = com.google.common.io.Files.asCharSource(outputFile, Charsets.UTF_8).read();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -100,9 +81,9 @@ public class PostService {
                     ". Please try again later.\n";
         }
 
-        log.info("LOG: response of download method: {}", postBody.toString());
+        log.info("LOG: response of download method: {}", postBody);
 
-        return content;
+        return postBody;
     }
 
     public String deletePost(String postId) {
