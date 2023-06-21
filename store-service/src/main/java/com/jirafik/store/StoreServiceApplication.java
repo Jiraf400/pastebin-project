@@ -22,6 +22,7 @@ public class StoreServiceApplication {
         ScheduledExecutorService executorService;
         executorService = Executors.newSingleThreadScheduledExecutor();
         executorService.scheduleAtFixedRate(DropBoxAuthenticationManager::authorize, 0, 3, TimeUnit.HOURS);
+
     }
 
 }

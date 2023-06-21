@@ -5,6 +5,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.*;
 
+import java.util.Date;
+
 @Data
 @ToString
 @Builder
@@ -18,6 +20,10 @@ public class StoredPost {
     private String id;
 
     private String fileName;
+
+    private Date dateOfCreation;
+
+    private String wroteBy;
 
     private String postTitle;
 }
