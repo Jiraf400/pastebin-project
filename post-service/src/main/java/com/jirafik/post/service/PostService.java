@@ -4,6 +4,7 @@ import com.jirafik.post.entity.Post;
 import com.jirafik.post.entity.PostRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -98,12 +99,13 @@ public class PostService {
                 .block();
     }
 
-    public List getPostList() {
+    public List getPostList(PageRequest pageRequest) {
 
         log.info("LOG: method getPostList() was called.");
 
         return webClientBuilder.build().get()
                 .uri("http://store-service/api/store/files")
+//                        uriBuilder -> uriBuilder.queryParam("pageRequest", pageRequest).build())
                 .retrieve()
                 .bodyToMono(List.class)
                 .block();
