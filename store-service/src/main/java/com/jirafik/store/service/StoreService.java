@@ -13,6 +13,8 @@ import com.jirafik.store.repository.StoreRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
@@ -32,13 +34,11 @@ public class StoreService {
 
         List<StoredPostResponse> storedPostResponseList = new ArrayList<>();
 
-        for (StoredPost post : repository.findAll()) {
+        for (StoredPost post : repository.findAll())
             storedPostResponseList.add(mapToStoredPostResponse(post));
-        }
 
-        if (storedPostResponseList.size() == 0) {
+        if (storedPostResponseList.size() == 0)
             return List.of(new StoredPostResponse("WARN", "No posts found"));
-        }
 
         return storedPostResponseList;
     }
@@ -52,6 +52,8 @@ public class StoreService {
         InputStream is = new ByteArrayInputStream(file);
 
         FileMetadata uploadedPost = null;
+
+        System.out.println("Post: " + post);
 
         if (postRequest.getId() != null) {
 
@@ -72,6 +74,8 @@ public class StoreService {
 
         StoredPost storedPost = StoredPost.builder()
                 .id(post.getId())
+                .dateOfCreation(post.getDateOfCreation())
+                .wroteBy(post.getWroteBy())
                 .postTitle(post.getTitle())
                 .fileName(uploadedPost.getName())
                 .build();

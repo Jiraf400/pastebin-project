@@ -14,7 +14,9 @@ import java.io.InputStreamReader;
 @Service
 public class DropBoxAuthenticationManager {
 
-
+    private static final String REFRESH_TOKEN = "";
+    private static final String APP_KEY = "";
+    private static final String APP_SECRET = "";
 
     //connect  to dropbox authorization server
     public static String authorize() {

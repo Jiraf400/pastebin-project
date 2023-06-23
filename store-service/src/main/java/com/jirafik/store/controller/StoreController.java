@@ -4,6 +4,7 @@ import com.jirafik.store.dto.PostRequest;
 import com.jirafik.store.dto.StoredPostResponse;
 import com.jirafik.store.service.StoreService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,11 +15,6 @@ import java.util.List;
 public class StoreController {
 
     private final StoreService service;
-
-    @GetMapping("/files")
-    public List<StoredPostResponse> listFiles() {
-        return service.getFileList();
-    }
 
     @PostMapping("/upload")
     public void uploadData(@RequestBody PostRequest postRequest) {
@@ -33,6 +29,11 @@ public class StoreController {
     @DeleteMapping("/delete")
     public String deleteData(@RequestParam("postId") String postId) {
         return service.deleteData(postId);
+    }
+
+    @GetMapping("/files")
+    public List<StoredPostResponse> listFiles(@RequestParam(value = "pageRequest", required = false) PageRequest pageRequest) {
+        return service.getFileList();
     }
 
 }

@@ -48,6 +48,8 @@ public class HashService {
 
     public String getPostId(String url) {
 
+        log.info("LOG: received url: {}", url);
+
         log.info("LOG: method getPostId() was called.");
 
         Hash hash = repository.findByUrl(url);
