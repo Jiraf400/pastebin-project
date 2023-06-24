@@ -25,9 +25,7 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     ports:
-      - "8181:8080"
-    expose:
-      - "8181"
+      - "8080:8080"
     volumes:
       - ./realms/:/opt/keycloak/data/import/
     depends_on:
