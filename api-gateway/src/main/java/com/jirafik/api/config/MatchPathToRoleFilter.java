@@ -1,6 +1,7 @@
 package com.jirafik.api.config;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -19,9 +20,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MatchPathToRoleFilter implements WebFilter {
 
-    private String userPath = "user";
-
-    private String userName = "USER";
+    @Value("${security.access.path.user}")
+    private String userPath;
+    @Value("${security.access.role.user}")
+    private String userName;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -34,12 +36,8 @@ public class MatchPathToRoleFilter implements WebFilter {
     Mono<Void> checkPathForRoleAccess(ServerWebExchange exchange, WebFilterChain chain, Principal principal) {
         var paths = extractPathsFromRequest(exchange.getRequest().getPath().value());
         var requestRoles = extractRoles(principal);
-
-        if (
-                hasProblemForRole(paths, requestRoles, userPath, userName)
-        ) {
+        if (hasProblemForRole(paths, requestRoles, userPath, userName))
             return Mono.error(() -> new AccessDeniedException("Request rejected: access denied"));
-        }
 
         return chain.filter(exchange);
     }

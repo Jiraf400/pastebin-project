@@ -5,6 +5,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtGrantedAuthoritiesConverterAdapter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 
 import static org.springframework.security.config.web.server.SecurityWebFiltersOrder.AUTHORIZATION;
@@ -15,8 +17,9 @@ import static org.springframework.security.config.web.server.SecurityWebFiltersO
 public class SecurityConfig {
 
     private final MatchPathToRoleFilter pathToRoleFilter;
+    private final JwtAuthConverter jwtConverter;
 
-    private final String[] allowedPaths = {
+    private final String[] publicPaths = {
             "/api/post/get/**",
             "/api/post/getList/**",
             "/actuator/health/**",
@@ -28,21 +31,30 @@ public class SecurityConfig {
 
         httpSecurity
                 .authorizeExchange()
-                .pathMatchers(allowedPaths).permitAll()
-//                .pathMatchers("/api/post/user/delete/**", "/api/post/user/send/**").hasRole("USER")
+                .pathMatchers(publicPaths).permitAll()
                 .anyExchange().authenticated();
 
         httpSecurity
-                .addFilterBefore(pathToRoleFilter, AUTHORIZATION)
+                .addFilterAfter(pathToRoleFilter, AUTHORIZATION)    //filter will start after authorization step
                 .csrf().disable()
                 .httpBasic().disable()
                 .formLogin().disable()
                 .logout().disable();
 
         httpSecurity
-                .oauth2ResourceServer(ServerHttpSecurity.OAuth2ResourceServerSpec::jwt);
+                .oauth2ResourceServer().jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()));
 
         return httpSecurity.build();
+    }
+
+    //Role Converter
+    @Bean
+    public ReactiveJwtAuthenticationConverter jwtAuthenticationConverter() {
+        var jwtAuthenticationConverter = new ReactiveJwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(
+                new ReactiveJwtGrantedAuthoritiesConverterAdapter(jwtConverter));
+
+        return jwtAuthenticationConverter;
     }
 
 }
