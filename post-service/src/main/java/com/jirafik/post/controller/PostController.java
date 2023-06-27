@@ -2,11 +2,17 @@ package com.jirafik.post.controller;
 
 import com.jirafik.post.entity.PostRequest;
 import com.jirafik.post.service.PostService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequiredArgsConstructor
@@ -16,26 +22,35 @@ public class PostController {
     private final PostService service;
 
     @GetMapping(value = "get/{postUrl}", produces = {"application/json"})
-    public String downloadPost(@PathVariable("postUrl") String uri) {
-        return service.download(uri);
+    @CircuitBreaker(name = "storeService", fallbackMethod = "fallbackMethod")
+    @TimeLimiter(name = "storeService")
+    @Retry(name = "storeService")
+    public CompletableFuture<String> downloadPost(@PathVariable("postUrl") String uri) {
+        return CompletableFuture.supplyAsync(() -> service.download(uri));
     }
 
     @GetMapping("/getList")
-    public List getFileList(
-            @RequestParam(required = false, defaultValue = "0") int page,
-            @RequestParam(required = false, defaultValue = "10") int size
-    ) {
-        return service.getPostList(PageRequest.of(page, size));
+    @CircuitBreaker(name = "storeService", fallbackMethod = "fallbackMethod")
+    @TimeLimiter(name = "storeService")
+    @Retry(name = "storeService")
+    public CompletableFuture<List> getPostList() {
+        return CompletableFuture.supplyAsync(service::getPostList);
     }
 
     @PostMapping("user/send")
-    public String uploadPost(@RequestBody PostRequest request) {
-        return service.upload(request);
+    @CircuitBreaker(name = "storeService")
+    @TimeLimiter(name = "storeService")
+    @Retry(name = "storeService")
+    public CompletableFuture<String> uploadPost(@RequestBody PostRequest request) {
+        return CompletableFuture.supplyAsync(() -> service.upload(request));
     }
 
     @DeleteMapping("/user/delete/{postId}")
-    public String deletePost(@PathVariable("postId") String postId) {
-        return service.deletePost(postId);
+    @CircuitBreaker(name = "storeService", fallbackMethod = "fallbackMethod")
+    @TimeLimiter(name = "storeService")
+    @Retry(name = "storeService")
+    public CompletableFuture<String> deletePost(@PathVariable("postId") String postId) {
+        return CompletableFuture.supplyAsync(() -> service.deletePost(postId));
     }
 
 }

@@ -4,7 +4,6 @@ import com.jirafik.post.entity.Post;
 import com.jirafik.post.entity.PostRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -13,8 +12,8 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @Slf4j
-@Service
 @RequiredArgsConstructor
+@Service
 public class PostService {
 
     private final WebClient.Builder webClientBuilder;
@@ -23,20 +22,7 @@ public class PostService {
 
         log.info("LOG: method upload() was called.");
 
-        System.out.println("PostService PostRequest.class : \n" + request);
-
-        String postUrl = webClientBuilder.build().post()
-                .uri("http://hash-service/api/hash/postHash",
-                        uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(Mono.just(request), PostRequest.class)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-
-        log.info("LOG: postUrl: {}", postUrl);
-
-        webClientBuilder.build()
+        var sentPost = webClientBuilder.build()
                 .post()
                 .uri("http://store-service/api/store/upload",
                         uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
@@ -46,7 +32,25 @@ public class PostService {
                 .bodyToMono(Post.class)
                 .block();
 
-        return postUrl;
+        var postUrl = webClientBuilder.build().post()
+                .uri("http://hash-service/api/hash/postHash",
+                        uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Mono.just(request), PostRequest.class)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
+
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//
+//            return "Oops. Look like some error occurred. Failed to upload post with title = " + request.getTitle() +
+//                    ". Please try again later.\n";
+//        }
+
+        log.info("LOG: postUrl: {}", postUrl);
+
+        return "Post placed successfully. Your post url: " + postUrl;
     }
 
     public String download(String postUrl) {
@@ -91,21 +95,31 @@ public class PostService {
 
         log.info("LOG: method deletePost() was called.");
 
-        return webClientBuilder.build().delete()
-                .uri("http://store-service/api/store/delete",
-                        uriBuilder -> uriBuilder.queryParam("postId", postId).build())
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+        String answer;
+
+        try {
+            answer = webClientBuilder.build().delete()
+                    .uri("http://store-service/api/store/delete",
+                            uriBuilder -> uriBuilder.queryParam("postId", postId).build())
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+        } catch (Exception e) {
+            e.printStackTrace();
+
+            return "Oops. Look like some error occurred. Failed to delete post with id = " + postId +
+                    ". Please try again later.\n";
+        }
+
+        return answer;
     }
 
-    public List getPostList(PageRequest pageRequest) {
+    public List getPostList() {
 
         log.info("LOG: method getPostList() was called.");
 
         return webClientBuilder.build().get()
                 .uri("http://store-service/api/store/files")
-//                        uriBuilder -> uriBuilder.queryParam("pageRequest", pageRequest).build())
                 .retrieve()
                 .bodyToMono(List.class)
                 .block();
