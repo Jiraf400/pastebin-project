@@ -4,7 +4,6 @@ import com.jirafik.store.dto.PostRequest;
 import com.jirafik.store.dto.StoredPostResponse;
 import com.jirafik.store.service.StoreService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,7 +31,7 @@ public class StoreController {
     }
 
     @GetMapping("/files")
-    public List<StoredPostResponse> listFiles(@RequestParam(value = "pageRequest", required = false) PageRequest pageRequest) {
+    public List<StoredPostResponse> listFiles() {
         return service.getFileList();
     }
 

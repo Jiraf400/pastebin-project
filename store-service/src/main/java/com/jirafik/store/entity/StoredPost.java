@@ -4,7 +4,9 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.*;
+import org.springframework.data.redis.core.RedisHash;
 
+import java.io.Serializable;
 import java.util.Date;
 
 @Data
@@ -14,14 +16,15 @@ import java.util.Date;
 @NoArgsConstructor
 @Entity
 @Table
-public class StoredPost {
+@RedisHash("StoredPost")
+public class StoredPost implements Serializable {
 
     @Id
     private String id;
 
     private String fileName;
 
-    private Date dateOfCreation;
+    private String dateOfCreation;
 
     private String wroteBy;
 

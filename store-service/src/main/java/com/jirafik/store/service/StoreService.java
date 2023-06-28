@@ -1,7 +1,7 @@
 package com.jirafik.store.service;
 
-import com.dropbox.core.v2.files.FileMetadata;
 import com.google.gson.Gson;
+import com.jirafik.store.caching.service.MetadataCacheService;
 import com.jirafik.store.dto.PostRequest;
 import com.jirafik.store.dto.StoredPostResponse;
 import com.jirafik.store.entity.Post;
@@ -10,15 +10,14 @@ import com.jirafik.store.exceptions.DownloadPostException;
 import com.jirafik.store.exceptions.PostNotFoundException;
 import com.jirafik.store.exceptions.UploadPostException;
 import com.jirafik.store.repository.StoreRepository;
+import com.jirafik.store.caching.service.PostCacheService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.*;
-import java.time.Instant;
 import java.util.*;
 
 @Slf4j
@@ -27,43 +26,35 @@ import java.util.*;
 public class StoreService {
 
     private final DropBoxAuthenticationManager authenticationManager;
+    private final StoreRepository repository;           //postgres db for metadata
 
-    private final StoreRepository repository;
+    private final PostCacheService postCache;           //redis post caching
+    private final MetadataCacheService metadataCache;   //redis post metadata caching
 
-    public List<StoredPostResponse> getFileList() {
+    private final ObjectMapper objectMapper;
 
-        List<StoredPostResponse> storedPostResponseList = new ArrayList<>();
-
-        for (StoredPost post : repository.findAll())
-            storedPostResponseList.add(mapToStoredPostResponse(post));
-
-        if (storedPostResponseList.size() == 0)
-            return List.of(new StoredPostResponse("WARN", "No posts found"));
-
-        return storedPostResponseList;
-    }
-
+    @Transactional
     public void uploadData(PostRequest postRequest) {
 
-        Post post = maptoPost(postRequest);
+        log.info("uploadData method started.");
 
+        System.out.println("PostRequest : " + postRequest);
+
+        Post post = objectMapper.maptoPost(postRequest);
         byte[] file = new Gson().toJson(post).getBytes();
-
         InputStream is = new ByteArrayInputStream(file);
 
-        FileMetadata uploadedPost = null;
+        System.out.println();
 
-        System.out.println("Post: " + post);
+        System.out.println("Post : " + post);
+
 
         if (postRequest.getId() != null) {
-
             try {
-
-                uploadedPost = authenticationManager.getCurrentUser()
+                authenticationManager.getCurrentUser()
                         .files()
                         .uploadBuilder("/" + post.getId() + ".json")
                         .uploadAndFinish(is);
-
 
             } catch (Exception e) {
                 log.info("Unable to download file: " + e.getMessage());
@@ -72,22 +63,26 @@ public class StoreService {
         } else
             throw new UploadPostException("Oops... Look like some error occurred while uploading post. Try again.");
 
-        StoredPost storedPost = StoredPost.builder()
-                .id(post.getId())
-                .dateOfCreation(post.getDateOfCreation())
-                .wroteBy(post.getWroteBy())
-                .postTitle(post.getTitle())
-                .fileName(uploadedPost.getName())
-                .build();
+        StoredPost storedPost = objectMapper.mapToStoredPost(post);
 
         repository.save(storedPost);
+
+        postCache.savePost(post);
+
+//        metadataCache.saveMetadata(storedPost);
 
         log.info("LOG: File was successfully saved with Id: " + post.getId());
     }
 
     public String downloadData(String postId) {
 
-        StoredPost post = repository.findById(postId).get();
+        StoredPost post = metadataCache.fetchMDataById(postId);
+
+        if (post == null) {
+            System.out.println("IF-block in downloadData() method was picked.");
+            post = repository.findById(postId).get();
+            System.out.println("post : " + post);
+        }
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
@@ -115,7 +110,16 @@ public class StoreService {
 
     public String deleteData(String postId) {
 
-        StoredPost post = repository.findById(postId).get();
+        StoredPost post;
+
+        post = metadataCache.fetchMDataById(postId);
+
+        //TODO exception handler if post not found
+
+        if (post == null) {
+            post = repository.findById(postId).get();
+            System.out.println("IF-block in deleteData() method was picked.");
+        }
 
         String fileToDelete = post.getFileName();
 
@@ -126,9 +130,11 @@ public class StoreService {
                         .files()
                         .deleteV2("/" + fileToDelete);
 
+                metadataCache.deleteMData(postId);
+                postCache.deletePost(postId);
                 repository.deleteById(postId);
             } catch (Exception e) {
-                log.info("Unable to download file: " + e.getMessage());
+                log.info("Unable to delete file: " + e.getMessage());
                 e.printStackTrace();
             }
 
@@ -137,23 +143,31 @@ public class StoreService {
         return "File with name: " + fileToDelete + " was deleted.";
     }
 
-    private Post maptoPost(PostRequest request) {
-        return Post.builder()
-                .id(request.getId())
-                .title(request.getTitle())
-                .img(request.getImg())
-                .content(request.getContent())
-                .tags(request.getTags())
-                .dateOfCreation(Date.from(Instant.now()))
-                .wroteBy("John")
-                .build();
-    }
+    public List<StoredPostResponse> getFileList() {
 
-    private StoredPostResponse mapToStoredPostResponse(StoredPost storedPost) {
-        return StoredPostResponse.builder()
-                .id(storedPost.getId())
-                .postTitle(storedPost.getPostTitle())
-                .build();
+        List<StoredPostResponse> storedPostResponseList = new ArrayList<>();
+
+        //bring Post metadata from Redis
+        List<StoredPost> metaList = metadataCache.fetchAllPosts();
+
+        if (metaList.size() > 0) {
+
+            for (StoredPost post : metaList)
+
+                storedPostResponseList.add(objectMapper.mapToStoredPostResponse(post));
+
+        } else {    // if metadata list from Redis is empty
+            metaList = repository.findAll();
+
+            for (StoredPost post : metaList)
+
+                storedPostResponseList.add(objectMapper.mapToStoredPostResponse(post));
+        }
+
+        if (storedPostResponseList.size() == 0)
+            return List.of(new StoredPostResponse("WARN", "No posts found"));
+
+        return storedPostResponseList;
     }
 
 }
