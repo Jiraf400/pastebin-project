@@ -1,7 +1,6 @@
 package com.jirafik.store.caching.service;
 
 import com.jirafik.store.caching.repository.MetadataRepository;
-import com.jirafik.store.entity.Post;
 import com.jirafik.store.entity.StoredPost;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,8 +13,8 @@ public class MetadataCacheService {
 
     private final MetadataRepository repository;
 
-    public boolean saveMetadata(StoredPost post) {
-        return repository.saveToCache(post);
+    public void saveMetadata(StoredPost post) {
+        repository.saveToCache(post);
     }
 
     public List<StoredPost> fetchAllPosts() {

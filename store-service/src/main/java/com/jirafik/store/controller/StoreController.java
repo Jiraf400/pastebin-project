@@ -26,8 +26,8 @@ public class StoreController {
     }
 
     @DeleteMapping("/delete")
-    public String deleteData(@RequestParam("postId") String postId) {
-        return service.deleteData(postId);
+    public void deleteData(@RequestParam("postId") String postId) {
+        service.deleteData(postId);
     }
 
     @GetMapping("/files")

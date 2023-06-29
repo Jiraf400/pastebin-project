@@ -7,20 +7,19 @@ import com.jirafik.store.entity.StoredPost;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.time.LocalTime;
 import java.util.Date;
 
 @Service
 public class ObjectMapper {
 
-    public Post maptoPost(PostRequest request) {
+    public Post mapToPost(PostRequest request) {
         return Post.builder()
                 .id(request.getId())
                 .title(request.getTitle())
                 .img(request.getImg())
                 .content(request.getContent())
                 .tags(request.getTags())
-                .dateOfCreation(LocalTime.now().toString())
+                .dateOfCreation(Date.from(Instant.now()))
                 .wroteBy("John")
                 .build();
     }
@@ -39,7 +38,7 @@ public class ObjectMapper {
                 .dateOfCreation(post.getDateOfCreation())
                 .wroteBy(post.getWroteBy())
                 .postTitle(post.getTitle())
-                .fileName("/" + post.getId() + ".json")
+                .fileName(post.getId() + ".json")
                 .build();
 
     }

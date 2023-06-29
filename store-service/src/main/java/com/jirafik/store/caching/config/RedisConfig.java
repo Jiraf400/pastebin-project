@@ -14,7 +14,7 @@ public class RedisConfig {
     @Bean
     public JedisConnectionFactory jedisConnectionFactory() {
         return new JedisConnectionFactory(
-                new RedisStandaloneConfiguration("localhost", 6379)
+                new RedisStandaloneConfiguration("pastebin-redis", 6379)
         );
     }
 

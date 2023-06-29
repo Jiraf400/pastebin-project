@@ -19,7 +19,7 @@ public class PostRepository{
     public void saveToCache(Post post) {
         System.out.println("PostRepository.saveToCache() started");
         try {
-            redisTemplate.opsForHash().put(KEY, post.getId(), post);
+            redisTemplate.opsForHash().put(KEY, post.getId().toString(), post);
         } catch (Exception e) {
             e.printStackTrace();
         }

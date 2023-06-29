@@ -15,14 +15,12 @@ public class MetadataRepository{
 
     private static final String KEY = "POST_METADATA";
 
-    public boolean saveToCache(StoredPost post) {
+    public void saveToCache(StoredPost post) {
         System.out.println("MetadataRepository.saveToCache() started");
         try {
             redisTemplate.opsForHash().put(KEY, post.getId(), post);
-            return true;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
         }
     }
 

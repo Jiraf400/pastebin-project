@@ -7,12 +7,11 @@ import org.springframework.data.redis.core.RedisHash;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
-
+@ToString
+@Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@ToString
-@Builder
 @RedisHash("Post")
 public class Post implements Serializable {
 
@@ -21,7 +20,7 @@ public class Post implements Serializable {
     @JsonProperty
     private String title;
     @JsonProperty
-    private String dateOfCreation;
+    private Date dateOfCreation;
     @JsonProperty
     private String content;
     @JsonProperty

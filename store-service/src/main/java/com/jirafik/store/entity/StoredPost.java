@@ -24,7 +24,7 @@ public class StoredPost implements Serializable {
 
     private String fileName;
 
-    private String dateOfCreation;
+    private Date dateOfCreation;
 
     private String wroteBy;
 

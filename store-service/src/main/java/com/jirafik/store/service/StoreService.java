@@ -1,5 +1,6 @@
 package com.jirafik.store.service;
 
+import com.dropbox.core.v2.files.FileMetadata;
 import com.google.gson.Gson;
 import com.jirafik.store.caching.service.MetadataCacheService;
 import com.jirafik.store.dto.PostRequest;
@@ -18,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.*;
+import java.time.LocalTime;
 import java.util.*;
 
 @Slf4j
@@ -33,21 +35,17 @@ public class StoreService {
 
     private final ObjectMapper objectMapper;
 
-    @Transactional
     public void uploadData(PostRequest postRequest) {
 
         log.info("uploadData method started.");
 
-        System.out.println("PostRequest : " + postRequest);
+        Post post = objectMapper.mapToPost(postRequest);
 
-        Post post = objectMapper.maptoPost(postRequest);
         byte[] file = new Gson().toJson(post).getBytes();
+
         InputStream is = new ByteArrayInputStream(file);
 
-        System.out.println();
-
         System.out.println("Post : " + post);
-
 
         if (postRequest.getId() != null) {
             try {
@@ -69,61 +67,53 @@ public class StoreService {
 
         postCache.savePost(post);
 
-//        metadataCache.saveMetadata(storedPost);
+        metadataCache.saveMetadata(storedPost);
 
         log.info("LOG: File was successfully saved with Id: " + post.getId());
     }
 
     public String downloadData(String postId) {
 
-        StoredPost post = metadataCache.fetchMDataById(postId);
-
-        if (post == null) {
-            System.out.println("IF-block in downloadData() method was picked.");
-            post = repository.findById(postId).get();
-            System.out.println("post : " + post);
-        }
+        Post post = postCache.fetchPostById(postId);
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        if (post.getId() != null && !postId.equals("")) {
+        if (post == null && !postId.equals("")) {
+
+            System.out.println("IF-block in downloadData() method was picked.");
+
+            StoredPost storedPost = repository.findById(postId).get();
+
+            System.out.println("post : " + storedPost);
 
             try {
-
                 authenticationManager.getCurrentUser()
                         .files()
-                        .downloadBuilder("/" + post.getFileName())
+                        .downloadBuilder("/" + storedPost.getFileName())
                         .download(outputStream);
-
-
             } catch (Exception e) {
                 log.info("Unable to download file: " + e.getMessage());
                 e.printStackTrace();
             }
-        } else
-            throw new DownloadPostException("Oops... Look like some error occurred while downloading post. Try again.");
+
+        } else {
+            System.out.println("ELSE-block in downloadData() method was picked.");
+            return post.toString();
+        }
 
         System.out.println("ByteArrayOutputStream outputStream: " + outputStream);
 
         return new JSONObject(outputStream.toString()).toString();
     }
 
-    public String deleteData(String postId) {
 
-        StoredPost post;
+    public void deleteData(String postId) {
 
-        post = metadataCache.fetchMDataById(postId);
+        String fileToDelete = repository.findById(postId).get().getFileName();
 
-        //TODO exception handler if post not found
+        if (!fileToDelete.equals("")) {
 
-        if (post == null) {
-            post = repository.findById(postId).get();
-            System.out.println("IF-block in deleteData() method was picked.");
-        }
-
-        String fileToDelete = post.getFileName();
-
-        if (!post.getFileName().equals("")) {
+            System.out.println("FileName to delete:" + fileToDelete);
 
             try {
                 authenticationManager.getCurrentUser()
@@ -137,10 +127,8 @@ public class StoreService {
                 log.info("Unable to delete file: " + e.getMessage());
                 e.printStackTrace();
             }
-
-        } else throw new PostNotFoundException("Oops... Look like some error occurred while deleting post. Try again.");
-
-        return "File with name: " + fileToDelete + " was deleted.";
+        } else
+            throw new PostNotFoundException("Oops... Look like some error occurred while deleting post. Try again.");
     }
 
     public List<StoredPostResponse> getFileList() {
@@ -169,5 +157,6 @@ public class StoreService {
 
         return storedPostResponseList;
     }
+
 
 }
