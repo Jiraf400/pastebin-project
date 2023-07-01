@@ -37,6 +37,7 @@ public class StoreService {
 
     public void uploadData(PostRequest postRequest) {
 
+        System.out.println("postRequest.getWroteBy() result: " + postRequest.getWroteBy());
         log.info("uploadData method started.");
 
         Post post = objectMapper.mapToPost(postRequest);

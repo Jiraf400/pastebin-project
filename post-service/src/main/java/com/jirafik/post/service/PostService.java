@@ -1,5 +1,7 @@
 package com.jirafik.post.service;
 
+import com.jirafik.post.broker.consumer.RabbitConsumer;
+import com.jirafik.post.broker.model.User;
 import com.jirafik.post.entity.Post;
 import com.jirafik.post.entity.PostRequest;
 import lombok.RequiredArgsConstructor;
@@ -17,12 +19,15 @@ import java.util.List;
 public class PostService {
 
     private final WebClient.Builder webClientBuilder;
+    private final RabbitConsumer consumer;
 
     public String upload(PostRequest request) {
 
+        request.setWroteBy(consumer.getAuthenticatedUserName());
+
         log.info("LOG: method upload() was called.");
 
-        var sentPost = webClientBuilder.build()
+        webClientBuilder.build()
                 .post()
                 .uri("http://store-service/api/store/upload",
                         uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
@@ -32,21 +37,14 @@ public class PostService {
                 .bodyToMono(Post.class)
                 .block();
 
-        var postUrl = webClientBuilder.build().post()
-                .uri("http://hash-service/api/hash/postHash",
-                        uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(Mono.just(request), PostRequest.class)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//
-//            return "Oops. Look like some error occurred. Failed to upload post with title = " + request.getTitle() +
-//                    ". Please try again later.\n";
-//        }
+          String postUrl = webClientBuilder.build().post()
+                    .uri("http://hash-service/api/hash/postHash",
+                            uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(Mono.just(request), PostRequest.class)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
 
         log.info("LOG: postUrl: {}", postUrl);
 
@@ -57,34 +55,21 @@ public class PostService {
 
         log.info("LOG: method download() was called.");
 
-        String postId = "";
-        String postBody = "";
+        String postId = webClientBuilder.build().get()
+                .uri("http://hash-service/api/hash/getId",
+                        uriBuilder -> uriBuilder.queryParam("postUrl", postUrl).build())
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
 
-        try {
+        log.info("LOG: postId: {}", postId);
 
-            postId = webClientBuilder.build().get()
-                    .uri("http://hash-service/api/hash/getId",
-                            uriBuilder -> uriBuilder.queryParam("postUrl", postUrl).build())
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-
-            log.info("LOG: postId: {}", postId);
-
-            String finalPostId = postId;
-            postBody = webClientBuilder.build().get()
-                    .uri("http://store-service/api/store/download",
-                            uriBuilder -> uriBuilder.queryParam("postId", finalPostId).build())
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-
-            return "Oops. Look like some error occurred. Failed to download post with id = " + postId +
-                    ". Please try again later.\n";
-        }
+        String postBody = webClientBuilder.build().get()
+                .uri("http://store-service/api/store/download",
+                        uriBuilder -> uriBuilder.queryParam("postId", postId).build())
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
 
         log.info("LOG: response of download method: {}", postBody);
 
@@ -95,23 +80,14 @@ public class PostService {
 
         log.info("LOG: method deletePost() was called.");
 
-        String answer;
+        webClientBuilder.build().delete()
+                .uri("http://store-service/api/store/delete",
+                        uriBuilder -> uriBuilder.queryParam("postId", postId).build())
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
 
-        try {
-            answer = webClientBuilder.build().delete()
-                    .uri("http://store-service/api/store/delete",
-                            uriBuilder -> uriBuilder.queryParam("postId", postId).build())
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
-        } catch (Exception e) {
-            e.printStackTrace();
-
-            return "Oops. Look like some error occurred. Failed to delete post with id = " + postId +
-                    ". Please try again later.\n";
-        }
-
-        return answer;
+        return "Post with id: " + postId + " was successfully deleted";
     }
 
     public List getPostList() {

@@ -20,7 +20,7 @@ public class ObjectMapper {
                 .content(request.getContent())
                 .tags(request.getTags())
                 .dateOfCreation(Date.from(Instant.now()))
-                .wroteBy("John")
+                .wroteBy(request.getWroteBy())
                 .build();
     }
 

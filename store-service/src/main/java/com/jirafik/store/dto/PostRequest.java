@@ -21,6 +21,8 @@ public class PostRequest {
     @JsonProperty
     private String img;
     @JsonProperty
+    private String wroteBy;
+    @JsonProperty
     private List<String> tags;
 
 }

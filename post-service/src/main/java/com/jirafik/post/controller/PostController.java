@@ -22,7 +22,7 @@ public class PostController {
     private final PostService service;
 
     @GetMapping(value = "get/{postUrl}", produces = {"application/json"})
-    @CircuitBreaker(name = "storeService", fallbackMethod = "fallbackMethod")
+    @CircuitBreaker(name = "storeService")
     @TimeLimiter(name = "storeService")
     @Retry(name = "storeService")
     public CompletableFuture<String> downloadPost(@PathVariable("postUrl") String uri) {
@@ -30,7 +30,7 @@ public class PostController {
     }
 
     @GetMapping("/getList")
-    @CircuitBreaker(name = "storeService", fallbackMethod = "fallbackMethod")
+    @CircuitBreaker(name = "storeService")
     @TimeLimiter(name = "storeService")
     @Retry(name = "storeService")
     public CompletableFuture<List> getPostList() {
@@ -46,7 +46,7 @@ public class PostController {
     }
 
     @DeleteMapping("/user/delete/{postId}")
-    @CircuitBreaker(name = "storeService", fallbackMethod = "fallbackMethod")
+    @CircuitBreaker(name = "storeService")
     @TimeLimiter(name = "storeService")
     @Retry(name = "storeService")
     public CompletableFuture<String> deletePost(@PathVariable("postId") String postId) {

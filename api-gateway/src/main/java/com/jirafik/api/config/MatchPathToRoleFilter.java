@@ -1,9 +1,12 @@
 package com.jirafik.api.config;
 
+import com.jirafik.api.broker.model.User;
+import com.jirafik.api.broker.publisher.RabbitPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -19,6 +22,8 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class MatchPathToRoleFilter implements WebFilter {
+
+    private final RabbitPublisher publisher;
 
     @Value("${security.access.path.user}")
     private String userPath;
@@ -48,6 +53,10 @@ public class MatchPathToRoleFilter implements WebFilter {
     }
 
     private Set<String> extractRoles(Principal principal) {
+
+        User user = new User(principal.getName());
+        publisher.sendUser(user);
+
         return ((JwtAuthenticationToken) principal).getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
