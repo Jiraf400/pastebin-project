@@ -1,10 +1,10 @@
 package com.jirafik.post.service;
 
-import com.jirafik.post.broker.consumer.RabbitConsumer;
-import com.jirafik.post.broker.model.User;
 import com.jirafik.post.entity.Post;
 import com.jirafik.post.entity.PostRequest;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -14,16 +14,18 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @Slf4j
+@Data
 @RequiredArgsConstructor
 @Service
 public class PostService {
 
     private final WebClient.Builder webClientBuilder;
-    private final RabbitConsumer consumer;
+    private String wroteByName;
 
+    @SneakyThrows
     public String upload(PostRequest request) {
 
-        request.setWroteBy(consumer.getAuthenticatedUserName());
+        request.setWroteBy(getWroteByName());
 
         log.info("LOG: method upload() was called.");
 
@@ -37,14 +39,14 @@ public class PostService {
                 .bodyToMono(Post.class)
                 .block();
 
-          String postUrl = webClientBuilder.build().post()
-                    .uri("http://hash-service/api/hash/postHash",
-                            uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(Mono.just(request), PostRequest.class)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .block();
+        String postUrl = webClientBuilder.build().post()
+                .uri("http://hash-service/api/hash/postHash",
+                        uriBuilder -> uriBuilder.queryParam("postRequest", request).build())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Mono.just(request), PostRequest.class)
+                .retrieve()
+                .bodyToMono(String.class)
+                .block();
 
         log.info("LOG: postUrl: {}", postUrl);
 
@@ -91,7 +93,6 @@ public class PostService {
     }
 
     public List getPostList() {
-
         log.info("LOG: method getPostList() was called.");
 
         return webClientBuilder.build().get()

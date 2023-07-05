@@ -3,12 +3,9 @@ package com.jirafik.post.controller;
 import com.jirafik.post.entity.PostRequest;
 import com.jirafik.post.service.PostService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
-import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import io.github.resilience4j.retry.annotation.Retry;
 import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,7 +34,7 @@ public class PostController {
         return CompletableFuture.supplyAsync(service::getPostList);
     }
 
-    @PostMapping("user/send")
+    @PostMapping("/user/send")
     @CircuitBreaker(name = "storeService")
     @TimeLimiter(name = "storeService")
     @Retry(name = "storeService")
