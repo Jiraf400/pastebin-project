@@ -1,7 +1,6 @@
 package com.jirafik.api.config;
 
-import com.jirafik.api.broker.model.User;
-import com.jirafik.api.broker.publisher.RabbitPublisher;
+import com.google.common.base.Strings;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,8 +22,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MatchPathToRoleFilter implements WebFilter {
 
-    private final RabbitPublisher publisher;
-
     @Value("${security.access.path.user}")
     private String userPath;
     @Value("${security.access.role.user}")
@@ -39,10 +36,14 @@ public class MatchPathToRoleFilter implements WebFilter {
     }
 
     Mono<Void> checkPathForRoleAccess(ServerWebExchange exchange, WebFilterChain chain, Principal principal) {
+
         var paths = extractPathsFromRequest(exchange.getRequest().getPath().value());
         var requestRoles = extractRoles(principal);
-        if (hasProblemForRole(paths, requestRoles, userPath, userName))
+
+        if (hasProblemForRole(paths, requestRoles, userPath, userName)) {
+
             return Mono.error(() -> new AccessDeniedException("Request rejected: access denied"));
+        }
 
         return chain.filter(exchange);
     }
@@ -53,10 +54,6 @@ public class MatchPathToRoleFilter implements WebFilter {
     }
 
     private Set<String> extractRoles(Principal principal) {
-
-        User user = new User(principal.getName());
-        publisher.sendUser(user);
-
         return ((JwtAuthenticationToken) principal).getAuthorities()
                 .stream()
                 .map(GrantedAuthority::getAuthority)
