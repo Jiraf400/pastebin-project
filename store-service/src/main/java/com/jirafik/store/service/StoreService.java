@@ -1,13 +1,11 @@
 package com.jirafik.store.service;
 
-import com.dropbox.core.v2.files.FileMetadata;
 import com.google.gson.Gson;
 import com.jirafik.store.caching.service.MetadataCacheService;
 import com.jirafik.store.dto.PostRequest;
 import com.jirafik.store.dto.StoredPostResponse;
 import com.jirafik.store.entity.Post;
 import com.jirafik.store.entity.StoredPost;
-import com.jirafik.store.exceptions.DownloadPostException;
 import com.jirafik.store.exceptions.PostNotFoundException;
 import com.jirafik.store.exceptions.UploadPostException;
 import com.jirafik.store.repository.StoreRepository;
@@ -16,7 +14,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.*;
 import java.time.LocalTime;
@@ -29,16 +26,13 @@ public class StoreService {
 
     private final DropBoxAuthenticationManager authenticationManager;
     private final StoreRepository repository;           //postgres db for metadata
-
     private final PostCacheService postCache;           //redis post caching
     private final MetadataCacheService metadataCache;   //redis post metadata caching
 
     private final ObjectMapper objectMapper;
 
     public void uploadData(PostRequest postRequest) {
-
-        System.out.println("postRequest.getWroteBy() result: " + postRequest.getWroteBy());
-        log.info("uploadData method started.");
+        log.info("LOG: uploadData method started.");
 
         Post post = objectMapper.mapToPost(postRequest);
 
@@ -46,7 +40,7 @@ public class StoreService {
 
         InputStream is = new ByteArrayInputStream(file);
 
-        System.out.println("Post : " + post);
+        log.info("LOG: PostToSave: {}", post);
 
         if (postRequest.getId() != null) {
             try {
@@ -79,13 +73,9 @@ public class StoreService {
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-        if (post == null && !postId.equals("")) {
-
-            System.out.println("IF-block in downloadData() method was picked.");
+        if (post == null && !postId.equals("")) {       //if redis db not contain this post we'll take it from metadata db
 
             StoredPost storedPost = repository.findById(postId).get();
-
-            System.out.println("post : " + storedPost);
 
             try {
                 authenticationManager.getCurrentUser()
@@ -98,15 +88,12 @@ public class StoreService {
             }
 
         } else {
-            System.out.println("ELSE-block in downloadData() method was picked.");
+            log.info("LOG: ELSE-block in downloadData() method was picked.");
             return post.toString();
         }
 
-        System.out.println("ByteArrayOutputStream outputStream: " + outputStream);
-
         return new JSONObject(outputStream.toString()).toString();
     }
-
 
     public void deleteData(String postId) {
 
@@ -114,7 +101,7 @@ public class StoreService {
 
         if (!fileToDelete.equals("")) {
 
-            System.out.println("FileName to delete:" + fileToDelete);
+            log.info("LOG: FileName to delete: {}", fileToDelete);
 
             try {
                 authenticationManager.getCurrentUser()

@@ -15,20 +15,20 @@ public class StoreController {
 
     private final StoreService service;
 
-    @PostMapping("/upload")
-    public void uploadData(@RequestBody PostRequest postRequest) {
-        service.uploadData(postRequest);
-    }
+//    @PostMapping("/upload")
+//    public void uploadData() {
+//        service.uploadData();
+//    }
 
     @GetMapping("/download")
     public String downloadData(@RequestParam("postId") String postId) {
         return service.downloadData(postId);
     }
 
-    @DeleteMapping("/delete")
-    public void deleteData(@RequestParam("postId") String postId) {
-        service.deleteData(postId);
-    }
+//    @DeleteMapping("/delete")
+//    public void deleteData(@RequestParam("postId") String postId) {
+//        service.deleteData(postId);
+//    }
 
     @GetMapping("/files")
     public List<StoredPostResponse> listFiles() {
