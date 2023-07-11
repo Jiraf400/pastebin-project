@@ -4,7 +4,6 @@ import com.jirafik.post.broker.producer.PostProducer;
 import com.jirafik.post.entity.PostRequest;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -23,13 +22,12 @@ public class PostService {
     private String wroteByName;
     private final PostProducer producer;
 
-    @SneakyThrows
     public String upload(PostRequest request) {
 
         request.setWroteBy(getWroteByName());
 
-        log.info("LOG: method upload() was called.");
         String postUrl = "";
+        String postId = request.getId();
 
         try {
             producer.sendUploadRequest(request);
@@ -44,30 +42,28 @@ public class PostService {
                     .block();
 
         } catch (Exception e) {
+            log.error("Cannot upload post with id: {}", postId);
             e.printStackTrace();
             return "Cannot upload post. Try again later.";
         }
 
-        log.info("LOG: Post placed successfully: {}", postUrl);
+        log.info("Post was placed successfully: {}", postId);
 
-        return "Post placed successfully. Download hash: " + postUrl;
+        return "Post was placed successfully. Download hash: " + postUrl;
     }
 
     public String download(String postUrl) {
 
-        log.info("LOG: method download() was called.");
-
         String postBody;
+        String postId;
 
         try {
-            String postId = webClientBuilder.build().get()
+            postId = webClientBuilder.build().get()
                     .uri("http://hash-service/api/hash/getId",
                             uriBuilder -> uriBuilder.queryParam("postUrl", postUrl).build())
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
-
-            log.info("LOG: postId: {}", postId);
 
             postBody = webClientBuilder.build().get()
                     .uri("http://store-service/api/store/download",
@@ -75,37 +71,48 @@ public class PostService {
                     .retrieve()
                     .bodyToMono(String.class)
                     .block();
+
         } catch (Exception e) {
+            log.error("Cannot download post with postUrl: {}", postUrl);
             e.printStackTrace();
-            return "Cannot download post. Try again later.";
+            return "Failed to get post. Please provide correct url and try again.";
         }
 
-        log.info("LOG: response of download method: {}", postBody);
-
+        log.info("Post was downloaded successfully.");
         return postBody;
     }
 
     public String deletePost(String postId) {
 
-        log.info("LOG: method deletePost() was called.");
-
         try {
             producer.sendDeleteRequest(PostRequest.builder().id(postId).build());
         } catch (Exception e) {
+            log.error("Cannot delete post with id: {}", postId);
             e.printStackTrace();
             return "Cannot delete post. Try again later.";
         }
+        log.info("Post was deleted successfully. Post id: " + postId);
+
         return "Post with id: " + postId + " was successfully deleted";
     }
 
     public List getPostList() {
-        log.info("LOG: method getPostList() was called.");
 
-        return webClientBuilder.build().get()
-                .uri("http://store-service/api/store/files")
-                .retrieve()
-                .bodyToMono(List.class)
-                .block();
+        List postList = List.of();
+
+        try {
+            postList = webClientBuilder.build().get()
+                    .uri("http://store-service/api/store/files")
+                    .retrieve()
+                    .bodyToMono(List.class)
+                    .block();
+        } catch (Exception e) {
+            log.error("Failed to reach posts.");
+            e.printStackTrace();
+        }
+
+        log.info("List of posts was successfully received.");
+        return postList;
     }
 
 

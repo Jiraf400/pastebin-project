@@ -18,8 +18,6 @@ public class HashService {
 
     public String postHash(PostRequest postRequest) {
 
-        log.info("LOG: method postHash() was called.");
-
         Hash hash = Hash.builder()
                 .hash(RandomStringUtils.random(8, "0123456789abcdefjpdkxmnoyzg"))
                 .url(RandomStringUtils.random(8, "0123456789abcdefjpdkxmnoyzg"))
@@ -28,7 +26,7 @@ public class HashService {
 
         repository.save(hash);
 
-        System.out.println("--Link with hash " + hash.getHash() + " was saved.");
+        log.info("Saved hash for post with id = {}", postRequest.getId());
 
         return hash.getUrl();
     }
@@ -38,25 +36,18 @@ public class HashService {
 
         Hash hash = repository.findByPostId(postId);
 
-        if (postId == null || hash == null)
+        if (postId == null || hash == null) {
+            log.error("Received postId or hash is null");
             throw new PostNotFoundException("Post with id: " + postId + "  not found. Provide valid values and try again.");
+        }
 
         hash.setUrl(RandomStringUtils.random(8, "0123456789abcdefjpdkxmnoyzg"));
 
-        return hash.getUrl();
-    }
+        String url = hash.getUrl();
 
-    public String getPostId(String url) {
+        log.info("Url was returned : {}", url);
 
-        log.info("LOG: received url: {}", url);
-
-        log.info("LOG: method getPostId() was called.");
-
-        Hash hash = repository.findByUrl(url);
-
-        if (url != null && hash != null) return hash.getPostId();
-
-        else throw new PostNotFoundException("No post found with such parameters. Try again.");
+        return url;
     }
 
 }

@@ -22,9 +22,4 @@ public class HashController {
         return service.getPostUrl(postId);
     }
 
-    @GetMapping("/getId")
-    public String getPostId(@RequestParam("postUrl") String url) {
-        return service.getPostId(url);
-    }
-
 }

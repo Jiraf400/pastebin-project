@@ -16,7 +16,6 @@ import org.json.JSONObject;
 import org.springframework.stereotype.Service;
 
 import java.io.*;
-import java.time.LocalTime;
 import java.util.*;
 
 @Slf4j
@@ -32,15 +31,11 @@ public class StoreService {
     private final ObjectMapper objectMapper;
 
     public void uploadData(PostRequest postRequest) {
-        log.info("LOG: uploadData method started.");
-
         Post post = objectMapper.mapToPost(postRequest);
 
         byte[] file = new Gson().toJson(post).getBytes();
 
         InputStream is = new ByteArrayInputStream(file);
-
-        log.info("LOG: PostToSave: {}", post);
 
         if (postRequest.getId() != null) {
             try {
@@ -50,11 +45,13 @@ public class StoreService {
                         .uploadAndFinish(is);
 
             } catch (Exception e) {
-                log.info("Unable to download file: " + e.getMessage());
+                log.error("Unable to download file: " + e.getMessage());
                 e.printStackTrace();
             }
-        } else
+        } else {
+            log.error("Unable to download file: postRequest.getId() == null");
             throw new UploadPostException("Oops... Look like some error occurred while uploading post. Try again.");
+        }
 
         StoredPost storedPost = objectMapper.mapToStoredPost(post);
 
@@ -64,7 +61,7 @@ public class StoreService {
 
         metadataCache.saveMetadata(storedPost);
 
-        log.info("LOG: File was successfully saved with Id: " + post.getId());
+        log.info("File was successfully saved with Id: " + post.getId());
     }
 
     public String downloadData(String postId) {
@@ -82,13 +79,16 @@ public class StoreService {
                         .files()
                         .downloadBuilder("/" + storedPost.getFileName())
                         .download(outputStream);
+
             } catch (Exception e) {
-                log.info("Unable to download file: " + e.getMessage());
+                log.error("Unable to download file: " + e.getMessage());
                 e.printStackTrace();
             }
 
-        } else {
-            log.info("LOG: ELSE-block in downloadData() method was picked.");
+            log.info("Post body was picked from main db. Post id: {}", post.getId());
+
+        } else {        //if redis db contains post
+            log.info("Post body was successfully found in redis db. Post id: {}", post.getId());
             return post.toString();
         }
 
@@ -101,8 +101,6 @@ public class StoreService {
 
         if (!fileToDelete.equals("")) {
 
-            log.info("LOG: FileName to delete: {}", fileToDelete);
-
             try {
                 authenticationManager.getCurrentUser()
                         .files()
@@ -112,11 +110,16 @@ public class StoreService {
                 postCache.deletePost(postId);
                 repository.deleteById(postId);
             } catch (Exception e) {
-                log.info("Unable to delete file: " + e.getMessage());
+                log.error("Unable to delete file: " + e.getMessage());
                 e.printStackTrace();
             }
-        } else
+
+            log.info("Post was successfully deleted. Post id: {}", postId);
+
+        } else {
+            log.error("Unable to delete file: Post not found");
             throw new PostNotFoundException("Oops... Look like some error occurred while deleting post. Try again.");
+        }
     }
 
     public List<StoredPostResponse> getFileList() {
@@ -143,8 +146,9 @@ public class StoreService {
         if (storedPostResponseList.size() == 0)
             return List.of(new StoredPostResponse("WARN", "No posts found"));
 
+        log.info("Returned list of post with {} elements", storedPostResponseList.size());
+
         return storedPostResponseList;
     }
-
 
 }
