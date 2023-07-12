@@ -54,10 +54,8 @@ services:
     ports:
       - "9200:9200"
     volumes:
-      - elasticsearch_data:/var/lib/elasticsearch/data
+      - ./elasticsearch_data:/var/lib/elasticsearch/data
       - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
-    networks:
-      - elastic
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.5.3
@@ -69,9 +67,6 @@ services:
       ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
     depends_on:
       - elasticsearch
-    networks:
-      - elastic
-
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.5.3
@@ -88,8 +83,6 @@ services:
       LS_JAVA_OPTS: "-Xmx256m -Xms256m"
     depends_on:
       - elasticsearch
-    networks:
-      - elastic
 
   keycloak:
     container_name: keycloak
@@ -125,6 +118,7 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+
 
   eureka-server:
     image: registry.hub.docker.com/jirafus400/eureka-server:latest
@@ -179,11 +173,3 @@ services:
       - postgres-hash
       - eureka-server
       - api-gateway
-
-networks:
-  elastic:
-    driver: bridge
-
-volumes:
-  elasticsearch_data:
-    driver: local

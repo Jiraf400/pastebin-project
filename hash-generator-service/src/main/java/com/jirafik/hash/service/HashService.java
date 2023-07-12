@@ -50,5 +50,18 @@ public class HashService {
         return url;
     }
 
+    public String getPostId(String url) {
+
+        log.info("LOG: received url: {}", url);
+
+        log.info("LOG: method getPostId() was called.");
+
+        Hash hash = repository.findByUrl(url);
+
+        if (url != null && hash != null) return hash.getPostId();
+
+        else throw new PostNotFoundException("No post found with such parameters. Try again.");
+    }
+
 }
 
