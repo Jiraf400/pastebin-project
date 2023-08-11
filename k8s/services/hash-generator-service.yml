@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: hash-service
+  name: hash-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hash-service
+  strategy: {}
+  template:
+    metadata:
+
+      labels:
+        app: hash-service
+    spec:
+      containers:
+        - name: hash-service
+          image: registry.hub.docker.com/jirafus400/hash-generator-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-hash:5432/hash-service
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: hash-service
+  name: hash-service
+spec:
+  ports:
+    - name: "80"
+      port: 80
+      targetPort: 9195
+  selector:
+    app: hash-service

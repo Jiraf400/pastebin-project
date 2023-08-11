@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: postgres-hash
+  name: postgres-hash
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-hash
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: postgres-hash
+    spec:
+      containers:
+        - args:
+            - -p
+            - "5431"
+          env:
+            - name: PGDATA
+              value: /data/postgres
+            - name: POSTGRES_DB
+              value: hash-service
+            - name: POSTGRES_PASSWORD
+              value: password
+            - name: POSTGRES_USER
+              value: hash
+          image: postgres
+          name: postgres-hash
+          ports:
+            - containerPort: 5432
+          resources: {}
+          volumeMounts:
+            - mountPath: /data/postgres
+              name: postgres-hash-claim0
+      restartPolicy: Always
+      volumes:
+        - name: postgres-hash-claim0
+          persistentVolumeClaim:
+            claimName: postgres-hash-claim0
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: postgres-hash
+  name: postgres-hash
+spec:
+  ports:
+    - name: "5432"
+      port: 5432
+      targetPort: 5432
+  selector:
+    app: postgres-hash
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: postgres-hash-claim0
+  name: postgres-hash-claim0
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}

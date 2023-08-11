@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: store-service
+  name: store-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: store-service
+  strategy: { }
+  template:
+    metadata:
+      labels:
+        app: store-service
+    spec:
+      containers:
+        - name: store-service
+          image: registry.hub.docker.com/jirafus400/store-service:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres-store:5431/store-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: store-service
+  name: store-service
+spec:
+  ports:
+    - name: "80"
+      port: 8080
+      targetPort: 9193
+  selector:
+    app: store-service

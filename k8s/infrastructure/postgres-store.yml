@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: postgres-store
+  name: postgres-store
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-store
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: postgres-store
+    spec:
+      containers:
+        - args:
+            - -p
+            - "5431"
+          env:
+            - name: PGDATA
+              value: /data/postgres
+            - name: POSTGRES_DB
+              value: store-service
+            - name: POSTGRES_PASSWORD
+              value: password
+            - name: POSTGRES_USER
+              value: store
+          image: postgres
+          name: postgres-store
+          ports:
+            - containerPort: 5431
+          resources: {}
+          volumeMounts:
+            - mountPath: /data/postgres
+              name: postgres-store-claim0
+      restartPolicy: Always
+      volumes:
+        - name: postgres-store-claim0
+          persistentVolumeClaim:
+            claimName: postgres-store-claim0
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: postgres-store
+  name: postgres-store
+spec:
+  ports:
+    - name: "5431"
+      port: 5431
+      targetPort: 5431
+  selector:
+    app: postgres-store
+status:
+  loadBalancer: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: postgres-store-claim0
+  name: postgres-store-claim0
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+status: {}

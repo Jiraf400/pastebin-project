@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: api-gateway
+  name: api-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api-gateway
+  strategy: { }
+  template:
+    metadata:
+      labels:
+        app: api-gateway
+    spec:
+      containers:
+        - env:
+            - name: LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY
+              value: ' TRACE'
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+            - name: spring.cloud.discovery.client.health-indicator.enabled
+              value: 'false'
+            - name: spring.security.oauth2.resourceserver.jwt.issuer-uri
+              value: http://keycloak:8080/realms/pastebin-project-realm
+            - name: spring.security.oauth2.resourceserver.jwt.jwk-set-uri
+              value: http://keycloak:8080/realms/pastebin-project-realm/protocol/openid-connect/certs
+          image: registry.hub.docker.com/jirafus400/api-gateway:latest
+          name: api-gateway
+          ports:
+            - containerPort: 9191
+          resources: { }
+      restartPolicy: Always
+status: { }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: api-gateway
+  name: api-gateway
+spec:
+  type: LoadBalancer
+  ports:
+    - name: "9191"
+      port: 9191
+      targetPort: 9191
+  selector:
+    app: api-gateway
